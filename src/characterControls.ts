@@ -23,8 +23,8 @@ export class CharacterControls {
     runVelocity = 10;
     walkVelocity = 10;
     isJumping: boolean = false; // Estado para controlar si está en salto
-    jumpHeight = 3; // Altura máxima del salto
-    jumpDuration = 0.6; // Duración del salto en segundos
+    jumpHeight = 8; // Altura máxima del salto
+    jumpDuration = 0.9; // Duración del salto en segundos
     jumpStartTime: number = 0; // Tiempo de inicio del salto
     initialY: number = 2; // NUEVO: Altura inicial del personaje
     
@@ -111,20 +111,37 @@ export class CharacterControls {
             this.model.position.x += moveX;
             this.model.position.z += moveZ;
             this.updateCameraTarget(moveX, moveZ);
+        } else {
+            // Si el personaje está estático, actualizamos también
+            this.updateCameraTarget(0, 0);
         }
     }
 
     private updateCameraTarget(moveX: number, moveZ: number) {
-        // move camera
-        this.camera.position.x += moveX;
-        this.camera.position.z += moveZ;
-
-        // update camera target
-        this.cameraTarget.x = this.model.position.x;
-        this.cameraTarget.y = this.model.position.y + 1;
-        this.cameraTarget.z = this.model.position.z;
-        this.orbitControl.target = this.cameraTarget;
+        // Calcular un offset detrás del personaje
+        const offset = new THREE.Vector3(0, 5, -10); // Altura y distancia detrás del personaje
+        const cameraPosition = this.model.position
+            .clone()
+            .add(offset.applyQuaternion(this.model.quaternion)); // Rotar el offset según la orientación del personaje
+    
+        // Interpolación para movimiento horizontal y vertical
+        this.camera.position.lerp(cameraPosition, 0.05); // Ajustar suavidad general de la transición
+    
+        // Mantener el objetivo en el centro del personaje, pero con un leve ajuste vertical
+        this.cameraTarget.set(
+            this.model.position.x,
+            this.model.position.y + 2, // Altura del objetivo (ligeramente encima del personaje)
+            this.model.position.z
+        );
+    
+        // Suavizar el movimiento del objetivo
+        this.orbitControl.target.lerp(this.cameraTarget, 0.1); // Ajustar suavidad del objetivo
+        this.orbitControl.update();
     }
+    
+    
+        
+    
 
     private directionOffset(keysPressed: any) {
         let directionOffset = 0; // w
